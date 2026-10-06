@@ -32,9 +32,9 @@ Cooldown database 30 detik per sesi berlaku untuk pertanyaan dan jawaban, termas
 
 ## Deploy Vercel
 
-Tautan pertanyaan menggunakan 5 angka, misalnya `https://domain.com/00624`. Nol di depan tetap bagian kode. Di beranda ada input kode untuk membuka pertanyaan langsung. Halaman percakapan menyediakan tautan pendek, QR, serta unduhan QR PNG. QR dibuat di browser tanpa layanan pihak ketiga; alamat mengikuti domain yang sedang dibuka. Untuk QR yang bisa dibagikan ke orang lain, buat/unduh QR dari domain Vercel atau domain publik, bukan localhost.
+Tautan pertanyaan menggunakan 5 huruf, misalnya `https://domain.com/KTMXZ`. Huruf kecil/besar diterima saat membuka tautan atau mengetik kode; generator menghindari I, L, dan O. Di beranda ada input kode untuk membuka pertanyaan langsung. Halaman percakapan menyediakan tautan pendek, QR, serta unduhan QR PNG. QR dibuat di browser tanpa layanan pihak ketiga; alamat mengikuti domain yang sedang dibuka. Untuk QR yang bisa dibagikan ke orang lain, buat/unduh QR dari domain Vercel atau domain publik, bukan localhost.
 
-Migration 002 memberikan kode unik untuk pertanyaan lama dan baru, tanpa mengganti UUID maupun relasi jawaban. Tautan lama `/questions/UUID` tetap berfungsi. Data demo lama di browser mendapat kode otomatis tanpa kehilangan jawaban/bookmark. Ruang kode 5 angka memiliki kapasitas maksimal 100.000 pertanyaan; kode merupakan alamat publik, bukan password.
+Migration 002 memberikan kode unik untuk pertanyaan lama dan baru, tanpa mengganti UUID maupun relasi jawaban. Tautan lama `/questions/UUID` tetap berfungsi. Data demo lama di browser mendapat kode otomatis tanpa kehilangan jawaban/bookmark. Ruang kode 5 huruf (23 huruf yang mudah dibaca) memiliki kapasitas maksimal 6.436.343 pertanyaan; kode merupakan alamat publik, bukan password.
 
 1. Push repository ke GitHub dan import project di Vercel.
 2. Pilih framework **Nuxt.js** dan Node **22.x** atau **24.x**.

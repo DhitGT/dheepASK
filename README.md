@@ -61,7 +61,7 @@ npx playwright install chromium
 npx playwright test
 ```
 
-Tes browser menjalankan mode demo, mencakup pertanyaan baru, jawaban, pencarian, bookmark, dan layout mobile. Verifikasi database live setelah setup: kirim pertanyaan pada satu browser, lihat/jawab pada browser lain, pastikan `select author_id` dan update/delete ditolak melalui key publik. Sesi yang baru mengirim perlu menunggu 30 detik sebelum mengirim lagi.
+Tes browser membangun dan menjalankan preview produksi mode demo di port 3107, mencakup pertanyaan baru, jawaban, pencarian, bookmark, QR, navigasi mobile, dan animasi dengan preferensi reduced motion. Konfigurasi Supabase lokal tidak digunakan oleh tes ini. Verifikasi database live setelah setup: kirim pertanyaan pada satu browser, lihat/jawab pada browser lain, pastikan `select author_id` dan update/delete ditolak melalui key publik. Sesi yang baru mengirim perlu menunggu 30 detik sebelum mengirim lagi.
 
 Daftar awal memuat maksimal 200 pertanyaan terbaru; percakapan memuat maksimal 500 jawaban. Link langsung tetap dapat membuka pertanyaan di luar daftar awal. Mode demo di-host hanya untuk mencoba antarmuka; gunakan Supabase untuk data bersama.
 

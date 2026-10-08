@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Category } from '~/types'
+const props = defineProps<{ roomId?: string; roomTitle?: string }>()
 const emit = defineEmits<{ close: []; created: [id: string] }>()
 const { ask, isDemo } = useAsk()
 const title = ref(''); const body = ref(''); const category = ref<Category>('Kehidupan')
@@ -9,7 +10,7 @@ async function submit() {
   if (saving.value) return
   if (title.value.trim().length < 10) { error.value = 'Tulis pertanyaan minimal 10 karakter.'; return }
   saving.value = true; error.value = ''
-  try { emit('created', await ask(title.value, body.value, category.value)) }
+  try { emit('created', await ask(title.value, body.value, category.value, props.roomId || null)) }
   catch { error.value = 'Belum berhasil dikirim. Periksa koneksi dan aktivasi anonymous sign-in Supabase. Jika baru mengirim, tunggu 30 detik.' }
   finally { saving.value = false }
 }
@@ -31,6 +32,7 @@ onBeforeUnmount(() => { document.body.style.overflow = ''; document.removeEventL
     <section ref="dialog" class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="flex items-center justify-between"><span class="eyebrow">CERITA DIMULAI DARI RASA INGIN TAHU</span><button class="icon-button" aria-label="Tutup" :disabled="saving" @click="emit('close')"><AskIcon name="close" /></button></div>
       <h2 id="modal-title" class="mt-5 text-3xl font-bold tracking-tight">Apa yang ada di pikiranmu?</h2><p class="mt-2 text-sm text-muted">Tidak perlu nama. Cukup pertanyaan yang jujur.</p>
+      <p v-if="roomId" class="mt-3 text-xs text-accent">Pertanyaan ini hanya muncul di ruang {{ roomTitle }}.</p>
       <form class="mt-7 space-y-5" @submit.prevent="submit">
         <div><label for="question-title" class="form-label">Pertanyaanmu <span class="text-purple-500">*</span></label><input id="question-title" v-model="title" required minlength="10" maxlength="180" class="form-input" placeholder="Hal yang selalu ingin kamu tanyakan…"><p class="mt-1 text-right text-xs text-muted">{{ title.length }}/180</p></div>
         <div><label for="question-body" class="form-label">Sedikit konteks <span class="font-normal text-muted">(opsional)</span></label><textarea id="question-body" v-model="body" maxlength="2000" rows="4" class="form-input" placeholder="Ceritakan sedikit agar orang lain lebih memahami…" /></div>

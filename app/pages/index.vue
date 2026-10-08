@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { questions, bookmarks, busy, error, load } = useAsk();
+const { questions, bookmarks, busy, error, load, watchUpdates } = useAsk();
 const route = useRoute();
 const active = ref(String(route.query.topic || "Semua"));
 const search = ref("");
@@ -14,8 +14,9 @@ const topics = [
   "Teknologi",
   "Random",
 ];
+const publicQuestions = computed(() => questions.value.filter(q => !q.room_id));
 const filtered = computed(() => {
-  let result = questions.value.filter(
+  let result = publicQuestions.value.filter(
     (q) =>
       (active.value === "Semua" ||
         (active.value === "Tersimpan"
@@ -32,11 +33,12 @@ const filtered = computed(() => {
   );
 });
 const trending = computed(() =>
-  [...questions.value]
+  [...publicQuestions.value]
     .sort((a, b) => b.answer_count - a.answer_count)
     .slice(0, 3),
 );
 onMounted(load);
+watchUpdates(() => 'feed', load);
 function created(id: string) {
   showModal.value = false;
   navigateTo(`/${id}`);
@@ -88,8 +90,10 @@ watch(
             ><AskIcon name="shield" :size="13" />Tanpa nama. Tanpa
             penghakiman.</span
           >
+          <HeroReactions />
         </div>
       </section>
+      <section class="community-card mb-6 flex flex-wrap items-center justify-between gap-4" aria-label="Ruang private"><div><h2 class="text-lg font-semibold">Punya konteks sendiri?</h2><p class="mt-2 text-xs leading-6 text-muted">Buat ruang untuk “Tanya apa aja tentang gw!” dan undang lewat tautan.</p></div><NuxtLink to="/rooms/new" class="primary-button"><AskIcon name="shield" :size="16" />Buat ruang private</NuxtLink></section>
       <section id="explore" class="explore-panel" aria-label="Ruang percakapan">
         <div class="panel-chrome">
           <div class="flex items-center gap-3">
@@ -228,12 +232,12 @@ watch(
               </p>
               <div class="community-stats">
                 <div>
-                  <strong>{{ questions.length }}</strong
+                  <strong>{{ publicQuestions.length }}</strong
                   ><span>Pertanyaan</span>
                 </div>
                 <div>
                   <strong>{{
-                    questions.reduce((sum, q) => sum + q.answer_count, 0)
+                    publicQuestions.reduce((sum, q) => sum + q.answer_count, 0)
                   }}</strong
                   ><span>Jawaban</span>
                 </div>

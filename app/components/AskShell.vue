@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 const props = defineProps<{ active?: string }>()
 const emit = defineEmits<{ ask: []; navigate: [value: string] }>()
 const { isDemo } = useAsk()
@@ -20,11 +20,12 @@ onBeforeUnmount(() => { document.removeEventListener('click', outside); document
         <nav class="desktop-nav" aria-label="Navigasi utama">
           <button :class="{ selected: props.active === 'Semua' }" @click="navigate('Semua')">Jelajahi</button>
           <button :class="{ selected: props.active === 'Tersimpan' }" @click="navigate('Tersimpan')">Tersimpan</button>
+          <NuxtLink to="/rooms/new" class="inline-flex items-center px-3 text-xs text-muted">Ruang private</NuxtLink>
           <button :aria-expanded="mobileOpen" aria-controls="topic-menu" @click="mobileOpen = !mobileOpen">Topik<AskIcon name="down" :size="13" /></button>
         </nav>
         <div class="header-actions"><button class="primary-button" @click="emit('ask'); mobileOpen = false"><AskIcon name="plus" :size="16" /><span>Buat pertanyaan</span></button><button class="icon-button menu-toggle" aria-label="Buka navigasi" aria-controls="topic-menu" :aria-expanded="mobileOpen" @click="mobileOpen = !mobileOpen"><AskIcon :name="mobileOpen ? 'close' : 'menu'" /></button></div>
         <nav v-if="mobileOpen" id="topic-menu" class="navigation-popover" aria-label="Topik pertanyaan">
-          <div class="mobile-nav-links"><button class="nav-item" @click="navigate('Semua')"><AskIcon name="compass" :size="18" />Jelajahi</button><button class="nav-item" @click="navigate('Tersimpan')"><AskIcon name="bookmark" :size="18" />Tersimpan</button></div>
+          <div class="mobile-nav-links"><NuxtLink to="/rooms/new" class="nav-item" @click="mobileOpen = false"><AskIcon name="shield" :size="18" />Ruang private</NuxtLink><button class="nav-item" @click="navigate('Semua')"><AskIcon name="compass" :size="18" />Jelajahi</button><button class="nav-item" @click="navigate('Tersimpan')"><AskIcon name="bookmark" :size="18" />Tersimpan</button></div>
           <p class="eyebrow px-3 pb-2 pt-3">TEMUKAN TOPIKMU</p><button v-for="topic in topics" :key="topic.name" class="nav-item topic-nav" :class="{ selected: props.active === topic.name }" @click="navigate(topic.name)"><AskIcon :name="topic.icon" :size="18" />{{ topic.name }}</button>
         </nav>
       </div>

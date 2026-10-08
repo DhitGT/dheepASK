@@ -50,6 +50,27 @@ await denied('select author_id from public.questions', /permission denied/i)
 await denied('select public.next_question_code()', /permission denied/i)
 await db.exec("set role authenticated; set request.jwt.claim.sub = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';")
 await denied(`insert into public.questions(title,category,author_id,short_code) values ('Tidak bisa memilih kode sendiri', 'Random', auth.uid(), '12345')`, /permission denied/i)
+await db.exec('reset role;')
+await db.exec(readFileSync(new URL('../supabase/migrations/003_answer_threads.sql', import.meta.url), 'utf8'))
+const parent = (await db.query('select id,parent_id from public.answers where question_id = $1', [id])).rows[0]
+assert.equal(parent.parent_id, null)
+// Fresh sessions avoid the posting cooldown while exercising threaded inserts.
+const users = (await db.query(`insert into auth.users select gen_random_uuid() from generate_series(1, 4) returning id`)).rows
+const otherQuestion = (await db.query('select id from public.questions where id <> $1 limit 1', [id])).rows[0].id
+await db.exec(`set role authenticated; set request.jwt.claim.sub = '${users[0].id}';`)
+const child = (await db.query(`insert into public.answers(question_id,parent_id,body,author_id) values ($1,$2,'Balasan dalam thread',auth.uid()) returning id,parent_id`, [id, parent.id])).rows[0]
+assert.equal(child.parent_id, parent.id)
+await denied(`insert into public.answers(question_id,parent_id,body,author_id) values ('${id}','${child.id}','Balasan terlalu cepat',auth.uid())`, /wait 30 seconds/i)
+await db.exec(`set request.jwt.claim.sub = '${users[1].id}';`)
+await db.query(`insert into public.answers(question_id,parent_id,body,author_id) values ($1,$2,'Balasan bertingkat',auth.uid())`, [id, child.id])
+await db.exec(`set request.jwt.claim.sub = '${users[2].id}';`)
+await denied(`insert into public.answers(question_id,parent_id,body,author_id) values ('${otherQuestion}','${parent.id}','Lintas pertanyaan ditolak',auth.uid())`, /foreign key constraint/i)
+await denied(`insert into public.answers(question_id,parent_id,body,author_id) values ('${id}','00000000-0000-4000-8000-000000000000','Parent hilang ditolak',auth.uid())`, /foreign key constraint/i)
+await db.exec('set role anon;')
+assert.equal((await db.query('select answer_count from public.question_feed where id = $1', [id])).rows[0].answer_count, 3)
+assert.equal((await db.query('select parent_id from public.answers where id = $1', [child.id])).rows[0].parent_id, parent.id)
+await denied('select author_id from public.answers', /permission denied/i)
+await denied(`update public.answers set parent_id = null`, /permission denied/i)
 await db.close()
 console.log('PASS: migrations, public codes, uniqueness, backfill, letter codes, author privacy, ownership, counts, cooldown, write restrictions.')
 

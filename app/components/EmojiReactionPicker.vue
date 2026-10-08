@@ -9,6 +9,10 @@ const loading = ref(true)
 const error = ref('')
 let disposed = false
 let observer: ResizeObserver | undefined
+let frame = 0
+function schedulePlace() {
+  if (!frame && !disposed) frame = requestAnimationFrame(() => { frame = 0; place() })
+}
 function place() {
   if (!panel.value) return
   const anchor = props.anchor.getBoundingClientRect()
@@ -56,24 +60,26 @@ async function load() {
 }
 onMounted(() => {
   place(); closeButton.value?.focus()
-  observer = new ResizeObserver(place)
+  observer = new ResizeObserver(schedulePlace)
   if (panel.value) observer.observe(panel.value)
   window.addEventListener('pointerdown', outside, true)
   window.addEventListener('focusin', outside)
   window.addEventListener('keydown', keydown, true)
-  window.addEventListener('resize', place)
-  window.addEventListener('scroll', place, true)
-  window.visualViewport?.addEventListener('resize', place)
+  window.addEventListener('resize', schedulePlace)
+  window.addEventListener('scroll', schedulePlace, { capture: true, passive: true })
+  window.visualViewport?.addEventListener('resize', schedulePlace)
+  window.visualViewport?.addEventListener('scroll', schedulePlace)
   void load()
 })
 onBeforeUnmount(() => {
-  disposed = true; observer?.disconnect()
+  disposed = true; observer?.disconnect(); cancelAnimationFrame(frame)
   window.removeEventListener('pointerdown', outside, true)
   window.removeEventListener('focusin', outside)
   window.removeEventListener('keydown', keydown, true)
-  window.removeEventListener('resize', place)
-  window.removeEventListener('scroll', place, true)
-  window.visualViewport?.removeEventListener('resize', place)
+  window.removeEventListener('resize', schedulePlace)
+  window.removeEventListener('scroll', schedulePlace, true)
+  window.visualViewport?.removeEventListener('resize', schedulePlace)
+  window.visualViewport?.removeEventListener('scroll', schedulePlace)
 })
 </script>
 <template>

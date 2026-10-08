@@ -34,7 +34,7 @@ const relativeTime = computed(() => {
     <div class="mt-5 flex items-center justify-between border-t border-line pt-4"><button type="button" class="flex items-center gap-2 text-xs font-medium text-muted hover:text-accent" :aria-expanded="expanded" :aria-controls="`question-replies-${question.id}`" @click="expanded = !expanded"><AskIcon name="message" :size="17" />{{ question.answer_count }} jawaban <span class="ml-2 text-accent">{{ expanded ? 'Tutup' : 'Lihat & balas' }}</span></button><button class="icon-button" :class="{ 'text-accent': bookmarks.includes(question.id) }" :aria-pressed="bookmarks.includes(question.id)" :aria-label="bookmarks.includes(question.id) ? 'Hapus dari tersimpan' : 'Simpan pertanyaan'" @click="toggleBookmark(question.id)"><AskIcon name="bookmark" :size="18" /></button></div>
     <QuestionReactions :question="question" />
     <div class="mt-4 flex flex-wrap items-center gap-4">
-      <NuxtLink :to="link" class="inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent">Buka pertanyaan<AskIcon name="arrow" :size="15" /></NuxtLink>
+      <NuxtLink :to="link" :prefetch="false" class="inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent">Buka pertanyaan<AskIcon name="arrow" :size="15" /></NuxtLink>
       <button type="button" class="inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent" @click="share"><AskIcon :name="copied ? 'check' : 'link'" :size="15" />{{ copied ? 'Tautan tersalin' : 'Bagikan' }}</button>
     </div>
     <div v-if="shareUrl" class="mt-3">
@@ -44,7 +44,7 @@ const relativeTime = computed(() => {
       <p v-else-if="copied" role="status" class="mt-2 text-xs text-accent">Tautan pertanyaan sudah disalin.</p>
     </div>
     <div v-if="opened" v-show="expanded" :id="`question-replies-${question.id}`">
-      <QuestionReplies :question="question" />
+      <QuestionReplies :question="question" :active="expanded" />
     </div>
   </article>
 </template>

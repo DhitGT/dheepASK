@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Question } from '~/types'
-const props = defineProps<{ question: Question }>()
+const props = defineProps<{ question: Question; active?: boolean }>()
 const { answers, loadAnswers, reply, watchUpdates } = useAsk()
 const replies = computed(() => answers.value.filter(answer => answer.question_id === props.question.id))
 const roots = computed(() => replies.value.filter(answer => !answer.parent_id || !replies.value.some(parent => parent.id === answer.parent_id)))
@@ -18,7 +18,7 @@ async function load() {
   finally { loading.value = false }
 }
 onMounted(load)
-watchUpdates(() => `question:${props.question.id}`, refresh)
+watchUpdates(() => props.active === false ? null : `question:${props.question.id}`, refresh)
 async function submit() {
   if (saving.value) return
   saving.value = true; error.value = ''; success.value = ''

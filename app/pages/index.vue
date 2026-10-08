@@ -5,6 +5,8 @@ const active = ref(String(route.query.topic || "Semua"));
 const search = ref("");
 const tab = ref("Terbaru");
 const showModal = ref(false);
+const visibleCount = ref(24);
+watch([active, search, tab], () => { visibleCount.value = 24 });
 const topics = [
   "Semua",
   "Kehidupan",
@@ -208,11 +210,12 @@ watch(
             </div>
             <div v-else class="space-y-4">
               <QuestionCard
-                v-for="question in filtered"
+                v-for="question in filtered.slice(0, visibleCount)"
                 :key="question.id"
                 :question="question"
               />
             </div>
+            <button v-if="filtered.length > visibleCount" type="button" class="primary-button mt-5 w-full" @click="visibleCount += 24">Lihat lebih banyak pertanyaan</button>
             <p v-if="filtered.length" class="feed-footer">
               Kamu sudah sampai di sini. Mungkin sekarang giliranmu bercerita?
               <span>✦</span>
@@ -308,6 +311,6 @@ watch(
         >
       </section>
     </main>
-    <AskModal v-if="showModal" @close="showModal = false" @created="created" />
+    <LazyAskModal v-if="showModal" @close="showModal = false" @created="created" />
   </AskShell>
 </template>

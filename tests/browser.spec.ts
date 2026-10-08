@@ -249,7 +249,7 @@ test('hero counts visits and accepts repeated animated reactions', async ({ page
   await expect(page.getByTestId('reaction-count-fire')).toHaveText('1')
   await expect(page.locator('.reaction-burst').first()).toBeVisible()
   for (const key of ['heart', 'laugh', 'fire', 'clap', 'wow', 'love']) {
-    await expect.poll(() => page.locator(`[data-reaction="${key}"]`).evaluate((el: HTMLImageElement, reactionKey) => el.complete && el.naturalWidth > 0 && el.currentSrc.endsWith(`/emoji/noto/${reactionKey}.webp`), key)).toBe(true)
+    await expect.poll(() => page.locator(`[data-reaction="${key}"]`).evaluate((el: HTMLImageElement, reactionKey) => el.complete && el.naturalWidth > 0 && el.currentSrc.endsWith(`/emoji/noto/${reactionKey}.png`), key)).toBe(true)
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.screenshot({ path: 'test-results/hero-reactions-mobile.png' })
@@ -327,11 +327,11 @@ test('holding a reaction repeats until released, cancelled or unfocused', async 
   await expect(heartCount).toHaveText(String(cancelled))
 })
 
-test('touchscreen hold repeats and a short tap counts exactly once', async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true })
+test('touchscreen hold repeats and a short tap counts exactly once', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 }, hasTouch: true })
   try {
     const page = await context.newPage()
-    await page.goto('http://127.0.0.1:3107/')
+    await page.goto('/')
     const heart = page.getByRole('button', { name: 'Kirim reaksi ❤️ Suka', exact: true })
     const count = page.getByTestId('reaction-count-heart')
     await expect(heart).toBeEnabled()
@@ -371,10 +371,10 @@ test('mobile layout and topic navigation', async ({ page }) => {
   await page.screenshot({ path: 'test-results/mobile.png', fullPage: true })
   await page.screenshot({ path: 'test-results/mobile-viewport.png' })
   const glow = page.locator('.hero-glow')
-  expect(await glow.evaluate(element => getComputedStyle(element).animationName)).toBe('glow-drift')
+  expect(await glow.evaluate(element => getComputedStyle(element).animationName)).toBe('none')
   const initialTransform = await glow.evaluate(element => getComputedStyle(element).transform)
   await page.waitForTimeout(250)
-  expect(await glow.evaluate(element => getComputedStyle(element).transform)).not.toBe(initialTransform)
+  expect(await glow.evaluate(element => getComputedStyle(element).transform)).toBe(initialTransform)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   expect(await glow.evaluate(element => getComputedStyle(element).animationName)).toBe('none')
   expect(await page.locator('.aurora-violet').evaluate(element => getComputedStyle(element).animationName)).toBe('none')

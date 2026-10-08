@@ -35,6 +35,6 @@ function select(emoji: string) { closePicker(); void react(emoji) }
       <AskIcon name="reaction" :size="18" />
     </button>
   </div>
-  <EmojiReactionPicker v-if="picking && addButton" :anchor="addButton" @select="select" @close="closePicker" />
+  <LazyEmojiReactionPicker v-if="picking && addButton" :anchor="addButton" @select="select" @close="closePicker" />
   <p v-if="error" role="alert" class="mt-2 text-xs text-red-300">{{ error }}</p>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { SITE_REACTIONS, type ReactionKey } from "~/utils/reactions";
-const { stats, ready, error, isDemo, react, retry } = useSiteEngagement();
+const { stats, ready, error, react, retry } = useSiteEngagement();
 const bursts = ref<
   {
     id: number;
@@ -18,27 +18,38 @@ type Hold = {
   button: HTMLButtonElement;
   pointerId?: number;
   keyboardKey?: string;
+  bounds?: DOMRect;
+  left?: string;
 };
 let hold: Hold | null = null;
 let holdDelay: ReturnType<typeof setTimeout> | undefined;
 let holdRepeat: ReturnType<typeof setInterval> | undefined;
 let nextId = 0;
 const timers = new Set<ReturnType<typeof setTimeout>>();
+let lastBurst = -Infinity;
 function send(key: ReactionKey, button: HTMLButtonElement) {
   if (!ready.value) return;
   react(key);
   const reaction = SITE_REACTIONS.find((item) => item.key === key)!;
   announcement.value = `Terima kasih! Reaksi ${reaction.label} ditambahkan.`;
-  const panel = button.closest(".hero-reactions")!.getBoundingClientRect();
-  const bounds = button.getBoundingClientRect();
+  // Keep counts immediate, but cap visual work during rapid taps or a long press.
+  const now = performance.now();
+  if (now - lastBurst < 100 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  lastBurst = now;
+  let left = hold?.button === button ? hold.left : undefined;
+  if (!left) {
+    const panel = button.closest('.hero-reactions')!.getBoundingClientRect();
+    const bounds = button.getBoundingClientRect();
+    left = `${bounds.left - panel.left + bounds.width / 2}px`;
+  }
   const id = nextId++;
   bursts.value = [
-    ...bursts.value.slice(-29),
+    ...bursts.value.slice(-7),
     {
       id,
       image: reaction.image,
       staticImage: reaction.staticImage,
-      left: `${bounds.left - panel.left + bounds.width / 2}px`,
+      left,
       drift: `${((id % 5) - 2) * 22}px`,
       spin: `${(id % 2 ? 1 : -1) * 22}deg`,
     },
@@ -55,16 +66,19 @@ function stopHold() {
   heldReaction.value = null;
   clearTimeout(holdDelay);
   clearInterval(holdRepeat);
-  if (
+  try { if (
     previous?.pointerId !== undefined &&
     previous.button.hasPointerCapture(previous.pointerId)
   )
-    previous.button.releasePointerCapture(previous.pointerId);
+    previous.button.releasePointerCapture(previous.pointerId); } catch { /* A WebView may already have released capture. */ }
 }
 function startHold(press: Hold) {
   if (!ready.value) return;
   stopHold();
   hold = press;
+  press.bounds = press.button.getBoundingClientRect();
+  const panel = press.button.closest('.hero-reactions')!.getBoundingClientRect();
+  press.left = `${press.bounds.left - panel.left + press.bounds.width / 2}px`;
   heldReaction.value = press.key;
   send(press.key, press.button);
   holdDelay = setTimeout(() => {
@@ -72,11 +86,11 @@ function startHold(press: Hold) {
     send(press.key, press.button);
     holdRepeat = setInterval(() => {
       if (hold === press) send(press.key, press.button);
-    }, 80);
+    }, 120);
   }, 350);
 }
 function pointerDown(key: ReactionKey, event: PointerEvent) {
-  if (!event.isPrimary || event.button !== 0) return;
+  if (event.isPrimary === false || event.button !== 0) return;
   const button = event.currentTarget as HTMLButtonElement;
   startHold({ key, button, pointerId: event.pointerId });
   try {
@@ -93,7 +107,7 @@ function buttonBlur(event: FocusEvent) {
 }
 function pointerMove(event: PointerEvent) {
   if (!hold || hold.pointerId !== event.pointerId) return;
-  const rect = hold.button.getBoundingClientRect();
+  const rect = hold.bounds!;
   if (
     event.clientX < rect.left ||
     event.clientX > rect.right ||
@@ -128,6 +142,10 @@ onMounted(() => {
   window.addEventListener("pointerup", pointerEnd);
   window.addEventListener("pointercancel", pointerEnd);
   window.addEventListener("blur", stopHold);
+  window.addEventListener('touchend', stopHold, { passive: true });
+  window.addEventListener('touchcancel', stopHold, { passive: true });
+  window.addEventListener('pagehide', stopHold);
+  window.addEventListener('scroll', stopHold, { passive: true });
   document.addEventListener("visibilitychange", visibility);
 });
 onBeforeUnmount(() => {
@@ -136,6 +154,10 @@ onBeforeUnmount(() => {
   window.removeEventListener("pointerup", pointerEnd);
   window.removeEventListener("pointercancel", pointerEnd);
   window.removeEventListener("blur", stopHold);
+  window.removeEventListener('touchend', stopHold);
+  window.removeEventListener('touchcancel', stopHold);
+  window.removeEventListener('pagehide', stopHold);
+  window.removeEventListener('scroll', stopHold);
   document.removeEventListener("visibilitychange", visibility);
 });
 function number(value: number) {
@@ -182,7 +204,6 @@ function number(value: number) {
             media="(prefers-reduced-motion: reduce)"
             :srcset="reaction.staticImage"
             type="image/png" />
-          <source :srcset="reaction.image" type="image/webp" />
           <img
             class="reaction-emoji"
             :data-reaction="reaction.key"
@@ -217,7 +238,6 @@ function number(value: number) {
           media="(prefers-reduced-motion: reduce)"
           :srcset="burst.staticImage"
           type="image/png" />
-        <source :srcset="burst.image" type="image/webp" />
         <img
           :src="burst.staticImage"
           alt=""
@@ -241,7 +261,6 @@ function number(value: number) {
   border: 1px solid #c797f42b;
   border-radius: 14px;
   background: linear-gradient(135deg, #36154855, #0c0813a8);
-  backdrop-filter: blur(12px);
   box-shadow: inset 0 1px 0 #e8c5ff09;
 }
 .reaction-heading {
@@ -294,14 +313,15 @@ function number(value: number) {
   background: #b771f632;
   box-shadow: 0 0 22px #b164ed33;
 }
-.reaction-button:hover {
+@media (hover: hover) and (pointer: fine) {
+.reaction-button:hover:not(.is-holding) {
   border-color: #c593ec66;
   background: #b771f61c;
   box-shadow: 0 0 20px #b164ed17;
-  transform: translateY(-3px);
+}
 }
 .reaction-button:active {
-  transform: scale(0.9);
+  background: #b771f632;
 }
 .reaction-emoji {
   display: block;

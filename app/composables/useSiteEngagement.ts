@@ -59,7 +59,7 @@ export function useSiteEngagement() {
       error.value = 'Reaksi belum tersimpan. Periksa koneksi lalu coba lagi.'
     } finally {
       sending = false
-      if (succeeded && hasPending()) { if (disposed) void flush(); else timer = setTimeout(flush, 150) }
+      if (succeeded && hasPending()) { if (disposed) void flush(); else timer = setTimeout(flush, 400) }
       else if (succeeded && needsRefresh && !disposed) void refresh()
     }
   }
@@ -67,9 +67,12 @@ export function useSiteEngagement() {
     if (!ready.value) return
     revision++; stats.value.reactions[key]++
     if (isDemo) {
-      try { persistDemo(); error.value = '' }
-      catch { error.value = 'Reaksi belum tersimpan di browser. Periksa pengaturan penyimpanan.' }
-    } else { pending[key] = (pending[key] || 0) + 1; if (!sending && !timer) timer = setTimeout(flush, 150) }
+      if (!timer) timer = setTimeout(() => {
+        timer = undefined
+        try { persistDemo(); error.value = '' }
+        catch { error.value = 'Reaksi belum tersimpan di browser. Periksa pengaturan penyimpanan.' }
+      }, 100)
+    } else { pending[key] = (pending[key] || 0) + 1; if (!sending && !timer) timer = setTimeout(flush, 400) }
   }
   async function refresh() {
     if (isDemo || disposed || !ready.value || document.hidden || error.value) return
@@ -85,10 +88,13 @@ export function useSiteEngagement() {
     else if (hasPending()) await flush()
     else await start()
   }
-  function pagehide() { if (!isDemo) void flush() }
+  function pagehide() {
+    if (!isDemo) void flush()
+    else if (timer) { clearTimeout(timer); timer = undefined; try { persistDemo() } catch { /* Keep local totals if storage is unavailable. */ } }
+  }
   function storage(event: StorageEvent) { if (isDemo && event.key === storageKey) readDemo() }
   useRealtimeUpdates({ client: () => client!, topic: () => ready.value ? 'site' : null, refresh, demo: isDemo })
   onMounted(() => { void start(); window.addEventListener('pagehide', pagehide); window.addEventListener('storage', storage) })
-  onBeforeUnmount(() => { disposed = true; clearTimeout(timer); window.removeEventListener('pagehide', pagehide); window.removeEventListener('storage', storage); if (!isDemo) void flush() })
+  onBeforeUnmount(() => { disposed = true; pagehide(); clearTimeout(timer); window.removeEventListener('pagehide', pagehide); window.removeEventListener('storage', storage) })
   return { stats, ready, error, isDemo, react, retry }
 }

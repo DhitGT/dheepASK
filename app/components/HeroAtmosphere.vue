@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const atmosphere = ref<HTMLElement>()
+const lightEffects = inject<Ref<boolean>>('light-effects', ref(false))
 // Deterministic positions keep server rendering and hydration identical.
 const particles = Array.from({ length: 42 }, (_, i) => ({
   left: `${(i * 47 + 13) % 100}%`,
@@ -8,6 +9,7 @@ const particles = Array.from({ length: 42 }, (_, i) => ({
   delay: `${-(i * 1.7)}s`,
   duration: `${9 + i % 9}s`,
 }))
+const visibleParticles = computed(() => lightEffects.value ? particles.slice(0, 12) : particles)
 onMounted(() => {
   const element = atmosphere.value!
   const hero = element.parentElement!
@@ -15,6 +17,7 @@ onMounted(() => {
   let frame = 0
   let previousTime = 0
   let y = 0, targetY = 0
+  let visible = true
   function animate(time: number) {
     // Use elapsed time so scrolling stays responsive at lower frame rates.
     const blend = 1 - Math.exp(-(time - previousTime) / 100)
@@ -25,7 +28,7 @@ onMounted(() => {
     frame = Math.abs(targetY - y) > .1 ? requestAnimationFrame(animate) : 0
   }
   function scroll() {
-    if (reducedMotion.matches) {
+    if (reducedMotion.matches || lightEffects.value || !visible) {
       cancelAnimationFrame(frame); frame = 0; y = targetY = 0
       element.style.setProperty('--parallax-y', '0px')
       return
@@ -37,11 +40,14 @@ onMounted(() => {
     }
   }
   const observer = new IntersectionObserver(([entry]) => {
-    element.classList.toggle('is-paused', !entry?.isIntersecting)
+    visible = Boolean(entry?.isIntersecting)
+    element.classList.toggle('is-paused', !visible)
+    scroll()
   })
   observer.observe(hero)
   window.addEventListener('scroll', scroll, { passive: true })
   reducedMotion.addEventListener('change', scroll)
+  watch(lightEffects, scroll)
   scroll()
   onBeforeUnmount(() => {
     cancelAnimationFrame(frame)
@@ -69,7 +75,7 @@ onMounted(() => {
       <div class="horizon-light" />
     </div>
     <div class="particle-depth">
-      <i v-for="(particle, index) in particles" :key="index" class="space-particle"
+      <i v-for="(particle, index) in visibleParticles" :key="index" class="space-particle"
         :style="{ left: particle.left, top: particle.top, width: particle.size, height: particle.size, animationDelay: particle.delay, animationDuration: particle.duration }" />
       <div class="shooting-star shooting-one" />
       <div class="shooting-star shooting-two" />
@@ -97,6 +103,10 @@ onMounted(() => {
 .shooting-star::before { content: ''; position: absolute; left: 1px; top: 1px; width: var(--tail-length); height: 1px; transform-origin: left center; transform: rotate(-32deg); background: linear-gradient(90deg, #e8d8ffcc, #b584ef55 25%, transparent); }
 .shooting-two { --tail-length: 80px; top: 43%; left: 28%; animation-duration: 9s; animation-delay: -4s; }
 .is-paused :deep(*) { animation-play-state: paused !important; }
+:global(.app-layout.light-effects .aurora) { filter: none; mix-blend-mode: normal; animation: none; }
+:global(.light-effects .hero-glow) { filter: none; animation: none; }
+:global(.light-effects .horizon-grid), :global(.light-effects .hero-orbit), :global(.light-effects .hero-stars) { animation: none; }
+:global(.light-effects .space-particle) { box-shadow: none; }
 @keyframes aurora-flow { from { translate: -6% 12%; rotate: -16deg; scale: .9 1; opacity: .4; } to { translate: 7% -12%; rotate: 12deg; scale: 1.15 1.25; opacity: .85; } }
 @keyframes grid-travel { to { background-position: 0 65px; } }
 @keyframes horizon-breathe { 0%, 100% { opacity: .35; transform: scaleX(.95); } 50% { opacity: .85; transform: scaleX(1.05); } }

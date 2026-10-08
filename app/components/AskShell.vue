@@ -3,6 +3,16 @@ const props = defineProps<{ active?: string }>()
 const emit = defineEmits<{ ask: []; navigate: [value: string] }>()
 const { isDemo } = useAsk()
 const mobileOpen = ref(false)
+const lightEffects = ref(false)
+provide('light-effects', lightEffects)
+onMounted(() => {
+  const mobile = window.matchMedia('(max-width: 700px), (pointer: coarse)')
+  const embedded = /Instagram|FBAN|FBAV/i.test(navigator.userAgent)
+  const update = () => { lightEffects.value = embedded || mobile.matches }
+  update()
+  mobile.addEventListener('change', update)
+  onBeforeUnmount(() => mobile.removeEventListener('change', update))
+})
 const topics = [{ name: 'Kehidupan', icon: 'life' }, { name: 'Hubungan', icon: 'heart' }, { name: 'Karier', icon: 'career' }, { name: 'Pendidikan', icon: 'education' }, { name: 'Teknologi', icon: 'tech' }, { name: 'Random', icon: 'random' }]
 function navigate(value: string) { mobileOpen.value = false; emit('navigate', value) }
 const menu = ref<HTMLElement>()
@@ -12,7 +22,7 @@ onMounted(() => { document.addEventListener('click', outside); document.addEvent
 onBeforeUnmount(() => { document.removeEventListener('click', outside); document.removeEventListener('keydown', key) })
 </script>
 <template>
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'light-effects': lightEffects }">
     <GalaxyBackground />
     <a class="skip-link" href="#main-content">Lewati ke konten</a>
     <header class="site-header">

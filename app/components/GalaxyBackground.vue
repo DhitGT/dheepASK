@@ -1,14 +1,16 @@
 <script setup lang="ts">
 const background = ref<HTMLElement>()
+const lightEffects = inject<Ref<boolean>>('light-effects', ref(false))
 // Seeded positions keep the sky identical during server rendering and hydration.
 let seed = 7319
 function random() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646 }
-const stars = Array.from({ length: 112 }, (_, index) => ({
+const stars = Array.from({ length: 64 }, (_, index) => ({
   x: `${(random() * 100).toFixed(2)}%`, y: `${(random() * 100).toFixed(2)}%`,
   size: `${index % 9 === 0 ? 2.5 : index % 3 === 0 ? 1.5 : 1}px`,
   opacity: (0.22 + random() * 0.48).toFixed(2),
   duration: `${(6 + random() * 9).toFixed(2)}s`, delay: `${(-random() * 24).toFixed(2)}s`,
 }))
+const visibleStars = computed(() => lightEffects.value ? stars.slice(0, 32) : stars)
 // Uneven gaps keep neighboring constellations far apart, including across the wrap.
 const zodiacGaps = Array.from({ length: 12 }, () => 480 + random() * 320)
 const zodiacSpan = zodiacGaps.reduce((total, gap) => total + gap, 0)
@@ -65,7 +67,7 @@ onMounted(() => {
     <div class="galaxy-starfield">
       <!-- Identical sky tiles wrap horizontally without a jump at the loop boundary. -->
       <div v-for="tile in 2" :key="tile" class="galaxy-star-tile" :style="{ left: `${(tile - 1) * 50}%` }">
-        <i v-for="(star, index) in stars" :key="index" class="galaxy-star galaxy-twinkle"
+        <i v-for="(star, index) in visibleStars" :key="index" class="galaxy-star galaxy-twinkle"
           :style="{ left: star.x, top: star.y, width: star.size, height: star.size, '--star-opacity': star.opacity, animationDuration: star.duration, animationDelay: star.delay }" />
       </div>
     </div>
@@ -91,6 +93,7 @@ onMounted(() => {
 .galaxy-dust { position: absolute; inset: 0; opacity: .28; background-image: radial-gradient(circle, #e3d2ff 0 .6px, transparent 1px), radial-gradient(circle, #91b7e0 0 .5px, transparent .9px); background-size: 137px 173px, 211px 127px; background-position: 23px 47px, 111px 19px; animation: galaxy-dust-orbit 70s linear infinite; }
 .galaxy-star { position: absolute; display: block; border-radius: 50%; background: #e9ddff; opacity: var(--star-opacity); }
 .galaxy-twinkle { box-shadow: 0 0 6px #bc9bff70; animation: galaxy-twinkle 8s ease-in-out infinite; }
+.galaxy-star:nth-child(even) { animation: none; box-shadow: none; }
 .galaxy-zodiac-field { --zodiac-width: max(400vw, 7600px); position: absolute; top: 0; left: 0; width: calc(var(--zodiac-width) * 2); height: 100%; animation: galaxy-orbit 840s linear infinite; }
 .galaxy-zodiac-tile { position: absolute; top: 0; width: 50%; height: 100%; }
 .galaxy-constellation { position: absolute; width: clamp(140px, 14vw, 210px); opacity: .55; animation: galaxy-constellation-glimmer 13s ease-in-out infinite; }
@@ -99,6 +102,9 @@ onMounted(() => {
 .galaxy-meteor { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #f3eaff; box-shadow: 0 0 8px #c3a0ff; opacity: 0; animation: galaxy-meteor 23s linear infinite; }
 .galaxy-meteor::after { content: ''; position: absolute; left: 1px; top: 1px; width: var(--meteor-length); height: 1px; transform-origin: left center; transform: rotate(-32deg); background: linear-gradient(90deg, #dfceffa6, #aabbf533 40%, transparent); }
 .galaxy-paused *, .galaxy-paused *::after { animation-play-state: paused !important; }
+:global(.light-effects .galaxy-dust), :global(.light-effects .galaxy-nebula), :global(.light-effects .galaxy-constellation) { animation: none; }
+:global(.light-effects .galaxy-zodiac-field) { animation: none; }
+:global(.light-effects .galaxy-star) { animation: none; box-shadow: none; }
 @keyframes galaxy-twinkle { 0%, 100% { opacity: calc(var(--star-opacity) * .45); transform: scale(.8); } 50% { opacity: var(--star-opacity); transform: scale(1.2); } }
 @keyframes galaxy-orbit { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
 @keyframes galaxy-dust-orbit { from { background-position: 23px 47px, 111px 19px; } to { background-position: -114px 47px, -100px 19px; } }

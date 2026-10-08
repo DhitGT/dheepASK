@@ -92,10 +92,10 @@ onMounted(() => {
 .horizon-grid { position: absolute; inset: -100% 0 0; background-image: linear-gradient(#b983ef30 1px, transparent 1px), linear-gradient(90deg, #b983ef30 1px, transparent 1px); background-size: 65px 65px; transform: rotateX(68deg); animation: grid-travel 9s linear infinite; }
 .horizon-light { position: absolute; top: 58%; left: 13%; width: 74%; height: 95px; border-top: 1px solid #c293ff80; border-radius: 50%; box-shadow: 0 -12px 28px -17px #ddb8ff, 0 -35px 65px -40px #a65bff; opacity: .7; animation: horizon-breathe 7s ease-in-out infinite; }
 .space-particle { position: absolute; display: block; border-radius: 50%; background: #eed6ff; box-shadow: 0 0 10px 2px #c383ff60; animation: particle-rise 12s ease-in-out infinite; }
-.shooting-star { --tail-length: 115px; position: absolute; top: 31%; left: 68%; width: 3px; height: 3px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px 1px #c68cff; opacity: 0; animation: meteor-pass 12s linear infinite; }
+.shooting-star { --tail-length: 115px; position: absolute; top: 31%; left: 68%; width: 3px; height: 3px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px 1px #c68cff; opacity: 0; animation: meteor-pass 6s linear infinite; }
 /* The head moves down-left; its tail extends behind it toward the upper-right. */
 .shooting-star::before { content: ''; position: absolute; left: 1px; top: 1px; width: var(--tail-length); height: 1px; transform-origin: left center; transform: rotate(-32deg); background: linear-gradient(90deg, #e8d8ffcc, #b584ef55 25%, transparent); }
-.shooting-two { --tail-length: 80px; top: 43%; left: 28%; animation-duration: 17s; animation-delay: -8s; }
+.shooting-two { --tail-length: 80px; top: 43%; left: 28%; animation-duration: 9s; animation-delay: -4s; }
 .is-paused :deep(*) { animation-play-state: paused !important; }
 @keyframes aurora-flow { from { translate: -6% 12%; rotate: -16deg; scale: .9 1; opacity: .4; } to { translate: 7% -12%; rotate: 12deg; scale: 1.15 1.25; opacity: .85; } }
 @keyframes grid-travel { to { background-position: 0 65px; } }

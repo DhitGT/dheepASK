@@ -19,7 +19,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 button:focus-visible, a:focus-visible { outline: 2px solid #c7a4ff; outline-offset: 5px; }
 input:focus, textarea:focus, select:focus { outline: 2px solid #a467ee; outline-offset: 1px; }
 a { text-decoration: none; }
-.app-layout { min-height: 100vh; overflow: clip; }
+.app-layout { position: relative; isolation: isolate; min-height: 100vh; overflow: clip; }
 .skip-link { position: fixed; top: -60px; left: 20px; z-index: 200; padding: 12px 18px; border-radius: 8px; color: #0a0611; background: #fff; }
 .skip-link:focus { top: 12px; }
 .site-header { position: relative; z-index: 40; border-bottom: 1px solid #ffffff0d; background: #030204e6; }
@@ -80,7 +80,7 @@ a { text-decoration: none; }
 .hero-secondary { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #c1b2d0; }
 .hero-secondary:hover { color: #fff; }
 .hero-footnote { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 20px; color: #a091ad; font-size: 10px; }
-.explore-panel { position: relative; border: 1px solid #8e52c652; border-top-color: #c28bfa85; border-radius: 14px; background: linear-gradient(150deg, #180d2480, #08060cbf 30%, #08060cf5); box-shadow: 0 -20px 70px -30px #ae47ffb3, 0 0 50px -20px #8c45ff40, inset 0 1px 0 #ffffff0d; scroll-margin-top: 25px; }
+.explore-panel { position: relative; border: 1px solid #8e52c652; border-top-color: #c28bfa85; border-radius: 14px; background: linear-gradient(150deg, #180d2480, #08060cbf 30%, #08060cb3); box-shadow: 0 -20px 70px -30px #ae47ffb3, 0 0 50px -20px #8c45ff40, inset 0 1px 0 #ffffff0d; scroll-margin-top: 25px; }
 .panel-chrome { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 55px; padding: 0 24px; border-bottom: 1px solid #ffffff0b; color: #9888a8; font-size: 11px; }
 .window-dots { display: flex; gap: 5px; }
 .window-dots i { display: block; width: 6px; height: 6px; border-radius: 50%; background: #c88893; }
@@ -109,7 +109,7 @@ a { text-decoration: none; }
 .feed-tabs button:hover { color: #f0deff; }
 .feed-tabs button.active { border-bottom: 2px solid #b678f8; font-weight: 500; color: #d6b3ff; }
 .feed-tabs .refresh-button { padding-right: 2px; }
-.question-card { padding: 24px; border: 1px solid #ffffff13; border-radius: 9px; background: linear-gradient(125deg, #ffffff03, transparent 60%), #0c0911; box-shadow: inset 0 1px 0 #ffffff02; }
+.question-card { padding: 24px; border: 1px solid #ffffff13; border-radius: 9px; background: linear-gradient(125deg, #ffffff03, transparent 60%), #0c0911b3; box-shadow: inset 0 1px 0 #ffffff02; }
 .question-card:hover { border-color: #9d6ac52d; }
 .question-card h1, .question-card h2 { overflow-wrap: anywhere; font-weight: 500; }
 .question-link:hover h2 { color: #e1c6ff; }
@@ -165,8 +165,8 @@ a { text-decoration: none; }
 .topbar>a { color: #c8b5d8; font-size: 12px; }
 .conversation-content { position: relative; max-width: 880px; margin: auto; padding: 28px 25px 70px; }
 .conversation-content::before { content: ''; position: absolute; width: 720px; height: 500px; top: 0; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: -1; background: radial-gradient(ellipse at 50% 30%, #61279822, transparent 70%); }
-.conversation-content>.question-card:first-of-type { border-top-color: #c28aff3b; background: radial-gradient(ellipse at 0 0, #742baa17, transparent 70%), #0b0810; }
-.share-card { display: flex; align-items: center; gap: 28px; background: radial-gradient(ellipse at 15% 40%, #61289d21, transparent 70%), #0b0710; border-color: #a267d12d; }
+.conversation-content>.question-card:first-of-type { border-top-color: #c28aff3b; background: radial-gradient(ellipse at 0 0, #742baa17, transparent 70%), #0b0810b3; }
+.share-card { display: flex; align-items: center; gap: 28px; background: radial-gradient(ellipse at 15% 40%, #61289d21, transparent 70%), #0b0710b3; border-color: #a267d12d; }
 .share-copy { flex: 1; min-width: 0; }
 .question-code { margin: 12px 0; font-size: 38px; font-weight: 500; letter-spacing: 7px; color: #d2a7ff; text-shadow: 0 0 24px #9a54f938; }
 .qr-block { flex-shrink: 0; width: 168px; }
@@ -214,3 +214,14 @@ textarea.form-input { resize: vertical; min-height: 85px; }
 }
 @media (max-width: 390px) { .brand { font-size: 18px; } .brand-symbol { width: 27px; height: 27px; } .header-actions>.primary-button { font-size: 9px; padding-inline: 8px; } .hero h1 { font-size: 44px; letter-spacing: -2.5px; } .hero-actions { gap: 15px; } .hero-secondary { font-size: 10px; } .community-icon { width: 29px; height: 29px; } .question-card { padding: 17px; } .category-tag { padding-inline: 6px; font-size: 8px; } .feed-count { font-size: 8px; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+.inline-replies { margin-top: 1rem; border-top: 1px solid var(--color-line); }
+.inline-replies > article:first-of-type { border-top: 0; margin-top: 0; }
+.answer-reaction { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; min-height: 32px; border: 1px solid var(--color-line); border-radius: 8px; font-size: 12px; color: var(--color-muted); background: #ffffff06; }
+.answer-reaction:hover, .answer-reaction.selected { color: var(--color-accent); border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+
+.reaction-emoji { font-size: 18px; line-height: 1.2; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+.add-reaction-button { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; min-height: 34px; padding: 7px; color: var(--color-muted); border: 1px dashed var(--color-line); border-radius: 8px; }
+.add-reaction-button:hover, .add-reaction-button[aria-expanded='true'] { color: var(--color-accent); background: #bf93ff14; border-color: #bf93ff66; }
+.emoji-reaction-picker { position: fixed; z-index: 250; width: min(296px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; overscroll-behavior: contain; background: #15111d; border: 1px solid #ffffff24; border-radius: 12px; box-shadow: 0 16px 48px #0009; }
+.emoji-picker-host em-emoji-picker { width: 100%; height: min(350px, calc(100dvh - 134px)); min-height: 180px; --rgb-background: 21, 17, 29; --rgb-input: 12, 9, 17; --rgb-accent: 191, 147, 255; --font-family: var(--font-sans); --border-radius: 0; --shadow: none; }

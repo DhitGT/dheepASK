@@ -7,11 +7,13 @@ const children = computed(() => props.answers.filter(answer => answer.parent_id 
 const alias = computed(() => props.answer.anon_name || 'Anonim #' + number.value)
 const number = computed(() => String(props.answers.findIndex(answer => answer.id === props.answer.id) + 1).padStart(2, '0'))
 const composing = ref(false)
+const expanded = ref(false)
 const body = ref('')
 const saving = ref(false)
 const error = ref('')
 const success = ref('')
 const input = ref<HTMLTextAreaElement>()
+watch(() => children.value.length, () => { if (composing.value) expanded.value = true })
 async function startReply() {
   composing.value = true; success.value = ''
   await nextTick()
@@ -24,7 +26,7 @@ async function submit() {
   saving.value = true; error.value = ''
   try {
     await reply(props.answer.question_id, body.value, props.answer.id)
-    cancel(); success.value = 'Balasan anonimmu sudah terkirim.'
+    cancel(); expanded.value = true; success.value = 'Balasan anonimmu sudah terkirim.'
   } catch { error.value = 'Balasan belum terkirim. Periksa koneksi lalu coba lagi. Jika baru mengirim, tunggu 30 detik.' }
   finally { saving.value = false }
 }
@@ -38,6 +40,7 @@ function date(value: string) { return new Date(value).toLocaleString('id-ID', { 
       <div><p class="text-xs font-semibold">{{ alias }}</p><p class="mt-1 text-[11px] text-muted">{{ date(answer.created_at) }}</p></div>
     </div>
     <p class="mt-4 whitespace-pre-wrap break-words text-sm leading-7">{{ answer.body }}</p>
+    <AnswerReactions :answer="answer" />
     <button class="mt-3 flex items-center gap-2 text-xs text-muted hover:text-accent" :aria-expanded="composing" :aria-controls="`reply-form-${answer.id}`" @click="startReply"><AskIcon name="message" :size="15" />Balas<span class="sr-only"> {{ alias }}</span></button>
     <p v-if="success" role="status" class="mt-3 text-sm text-emerald-300">{{ success }}</p>
     <form v-if="composing" :id="`reply-form-${answer.id}`" class="mt-4" @submit.prevent="submit">
@@ -50,7 +53,10 @@ function date(value: string) { return new Date(value).toLocaleString('id-ID', { 
         <button class="primary-button" :disabled="saving">{{ saving ? 'Mengirim…' : 'Kirim balasan' }}<AskIcon name="send" :size="16" /></button>
       </div>
     </form>
-    <div v-if="children.length" :class="depth < 3 ? 'ml-2 border-l border-line pl-3 sm:ml-4 sm:pl-4' : ''">
+    <button v-if="children.length" type="button" class="mt-4 flex items-center gap-2 text-xs font-medium text-accent" :aria-expanded="expanded" :aria-controls="`answer-children-${answer.id}`" @click="expanded = !expanded">
+      <span aria-hidden="true">{{ expanded ? '−' : '+' }}</span>{{ expanded ? 'Sembunyikan balasan' : `Lihat ${children.length} balasan` }}
+    </button>
+    <div v-if="children.length" v-show="expanded" :id="`answer-children-${answer.id}`" :class="depth < 3 ? 'ml-2 border-l border-line pl-3 sm:ml-4 sm:pl-4' : ''">
       <AnswerThread v-for="child in children" :key="child.id" :answer="child" :answers="answers" :depth="depth + 1" />
     </div>
   </article>

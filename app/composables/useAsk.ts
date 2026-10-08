@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Question, Answer, Category, Room } from '~/types'
 import { demoData } from '~/utils/demo'
+import { isReactionEmoji, normalizeAnswerReactions, type AnswerReactionStats } from '~/utils/answerReactions'
 import { createShortCode } from '~/utils/shortCode'
 import { createRoomCode, ROOM_CODE_PATTERN } from '~/utils/roomCode'
 
@@ -12,6 +13,8 @@ export function useAsk() {
   const isDemo = !config.public.supabaseUrl || !config.public.supabaseAnonKey
   const questions = useState<Question[]>('questions', () => [])
   const answers = useState<Answer[]>('answers', () => [])
+  const answerReactions = useState<Record<string, AnswerReactionStats>>('answer-reactions', () => ({}))
+  const questionReactions = useState<Record<string, AnswerReactionStats>>('question-reactions', () => ({}))
   const rooms = useState<Room[]>('rooms', () => [])
   const demoAliases = useState<Record<string, string>>('demo-aliases', () => ({}))
   const bookmarks = useState<string[]>('bookmarks', () => [])
@@ -37,7 +40,7 @@ export function useAsk() {
     return data.session.user.id
   }
   function persist() {
-    if (import.meta.client && isDemo) localStorage.setItem('dheepask-demo-v1', JSON.stringify({ questions: questions.value, answers: answers.value, rooms: rooms.value, aliases: demoAliases.value }))
+    if (import.meta.client && isDemo) localStorage.setItem('dheepask-demo-v1', JSON.stringify({ questions: questions.value, answers: answers.value, rooms: rooms.value, aliases: demoAliases.value, answerReactions: answerReactions.value, questionReactions: questionReactions.value }))
   }
   function syncDemo() {
     if (!isDemo || !import.meta.client) return
@@ -47,6 +50,8 @@ export function useAsk() {
       questions.value = saved.questions; answers.value = saved.answers
       rooms.value = Array.isArray(saved.rooms) ? saved.rooms : []
       demoAliases.value = saved.aliases || {}
+      answerReactions.value = saved.answerReactions || {}
+      questionReactions.value = saved.questionReactions || {}
     } catch { /* Retain the last valid snapshot. */ }
   }
   function watchUpdates(topic: () => string | null, refresh: () => Promise<unknown>) {
@@ -66,7 +71,7 @@ export function useAsk() {
       if (isDemo) {
         if (!initialized.value) {
           let data = demoData()
-          if (import.meta.client) { try { const saved = JSON.parse(localStorage.getItem('dheepask-demo-v1') || 'null'); if (saved && Array.isArray(saved.questions) && Array.isArray(saved.answers)) { data = saved; rooms.value = Array.isArray(saved.rooms) ? saved.rooms : []; demoAliases.value = saved.aliases && typeof saved.aliases === 'object' ? saved.aliases : {} } } catch { /* restore demo */ } }
+          if (import.meta.client) { try { const saved = JSON.parse(localStorage.getItem('dheepask-demo-v1') || 'null'); if (saved && Array.isArray(saved.questions) && Array.isArray(saved.answers)) { data = saved; answerReactions.value = saved.answerReactions || {}; questionReactions.value = saved.questionReactions || {}; rooms.value = Array.isArray(saved.rooms) ? saved.rooms : []; demoAliases.value = saved.aliases && typeof saved.aliases === 'object' ? saved.aliases : {} } } catch { /* restore demo */ } }
           const used = new Set(data.questions.map(q => q.short_code).filter(code => /^[ABCDEFGHJKMNPQRSTUVWXYZ]{5}$/.test(code || '')))
           questions.value = data.questions.map(q => {
             if (/^[ABCDEFGHJKMNPQRSTUVWXYZ]{5}$/.test(q.short_code || '')) return q
@@ -81,6 +86,7 @@ export function useAsk() {
         const result = await db().from('question_feed').select(questionColumns).order('created_at', { ascending: false }).limit(200)
         if (result.error) throw result.error
         questions.value = [...questions.value.filter(q => q.room_id), ...result.data as Question[]]
+        await loadQuestionReactions(result.data.map(q => q.id))
       }
       initialized.value = true
     } catch { error.value = 'Pertanyaan belum bisa dimuat. Periksa koneksi atau konfigurasi Supabase, lalu coba lagi.' }
@@ -97,16 +103,52 @@ export function useAsk() {
     const result = await query.maybeSingle()
     if (result.error) throw result.error
     const question = result.data as Question | null
-    if (question) { const index = questions.value.findIndex(q => q.id === question.id); if (index < 0) questions.value.push(question); else questions.value[index] = question }
+    if (question) { const index = questions.value.findIndex(q => q.id === question.id); if (index < 0) questions.value.push(question); else questions.value[index] = question; await loadQuestionReactions([question.id]) }
     else questions.value = questions.value.filter(q => !((q.room_id || null) === room_id && (isCode ? q.short_code === id : q.id === id)))
     return question
   }
   async function loadAnswers(id: string) {
-    if (isDemo) return
+    if (isDemo) {
+      if (import.meta.client) {
+        try { answerReactions.value = JSON.parse(localStorage.getItem('dheepask-demo-v1') || '{}').answerReactions || {} } catch { /* Retain the last valid reactions. */ }
+      }
+      return
+    }
     const result = await db().from('answers').select('id,question_id,parent_id,body,created_at,anon_name').eq('question_id', id).order('created_at').order('id').limit(500)
     if (result.error) throw result.error
     answers.value = [...answers.value.filter(a => a.question_id !== id), ...result.data as Answer[]]
+    await identity()
+    const reactions = await db().rpc('get_answer_reactions', { question: id })
+    if (reactions.error) throw reactions.error
+    answerReactions.value = { ...answerReactions.value, ...reactions.data }
   }
+  async function loadQuestionReactions(ids: string[]) {
+    if (isDemo || !ids.length) return
+    await identity()
+    const result = await db().rpc('get_question_reactions', { question_ids: ids })
+    if (result.error) throw result.error
+    for (const id of ids) questionReactions.value[id] = result.data[id] || { counts: {}, mine: [] }
+  }
+  async function reactToPost(id: string, kind: 'answer' | 'question', emoji: string) {
+    if (!isReactionEmoji(emoji)) throw new Error('Pilih satu emoji untuk reaction.')
+    syncDemo()
+    const state = kind === 'question' ? questionReactions : answerReactions
+    const previous = normalizeAnswerReactions(state.value[id])
+    const selected = !previous.mine.includes(emoji)
+    if (isDemo) {
+      const counts = { ...previous.counts }
+      counts[emoji] = Math.max(0, (counts[emoji] || 0) + (selected ? 1 : -1))
+      state.value[id] = { counts, mine: selected ? [...previous.mine, emoji] : previous.mine.filter(key => key !== emoji) }
+      persist()
+    } else {
+      await identity()
+      const result = await db().rpc(kind === 'question' ? 'set_question_emoji_reaction' : 'set_answer_emoji_reaction', { target: id, emoji, selected })
+      if (result.error) throw result.error
+      state.value[id] = result.data
+    }
+  }
+  const reactToAnswer = (answer: Answer, emoji: string) => reactToPost(answer.id, 'answer', emoji)
+  const reactToQuestion = (question: Question, emoji: string) => reactToPost(question.id, 'question', emoji)
   async function ask(title: string, body: string, category: Category, room_id: string | null = null) {
     syncDemo()
     let question: Question
@@ -180,6 +222,7 @@ export function useAsk() {
     const result = await db().from('room_question_feed').select(questionColumns).eq('room_id', room_id).order('created_at', { ascending: false }).limit(200)
     if (result.error) throw result.error
     questions.value = [...questions.value.filter(q => q.room_id !== room_id), ...result.data as Question[]]
+    await loadQuestionReactions(result.data.map(q => q.id))
   }
-  return { isDemo, questions, answers, rooms, bookmarks, busy, error, load, getQuestion, loadAnswers, ask, reply, toggleBookmark, createRoom, joinRoom, loadRoomQuestions, watchUpdates }
+  return { isDemo, questions, answers, answerReactions, reactToAnswer, questionReactions, reactToQuestion, rooms, bookmarks, busy, error, load, getQuestion, loadAnswers, ask, reply, toggleBookmark, createRoom, joinRoom, loadRoomQuestions, watchUpdates }
 }

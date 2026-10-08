@@ -13,6 +13,7 @@ onBeforeUnmount(() => { document.removeEventListener('click', outside); document
 </script>
 <template>
   <div class="app-layout">
+    <GalaxyBackground />
     <a class="skip-link" href="#main-content">Lewati ke konten</a>
     <header class="site-header">
       <div ref="menu" class="site-navigation">
